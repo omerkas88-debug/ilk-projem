@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT Envanter Takip Sistemi</title>
+
+  <!-- STİL (CSS): Sayfanın renklerini ve düzenini belirler -->
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+      color: #1f2937;
+    }
+    .kapsayici { max-width: 1200px; margin: 0 auto; }
+    h1 { margin-top: 0; }
+    .kart {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    label { display: block; font-size: 14px; margin-bottom: 4px; font-weight: bold; }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+    }
+    button {
+      padding: 9px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      color: white;
+      background: #2563eb;
+    }
+    button:hover { background: #1d4ed8; }
+    button.sil { background: #dc2626; padding: 5px 10px; }
+    button.sil:hover { background: #b91c1c; }
+    button.duzenle { background: #d97706; padding: 5px 10px; }
+    button.duzenle:hover { background: #b45309; }
+    button.gecmis { background: #7c3aed; padding: 5px 10px; }
+    button.gecmis:hover { background: #6d28d9; }
+    button.ikincil { background: #059669; }
+    button.gri { background: #6b7280; }
+    .ust-cubuk {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .ust-cubuk input { max-width: 300px; }
+    .ust-cubuk select { max-width: 180px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f9fafb; }
+    td.islem { white-space: nowrap; }
+    .bos { text-align: center; color: #6b7280; padding: 20px; }
+    .tablo-sarmal { overflow-x: auto; }
+    .rozet {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .Aktif { background: #d1fae5; color: #065f46; }
+    .Arızalı { background: #fee2e2; color: #991b1b; }
+    .Depoda { background: #e5e7eb; color: #374151; }
+    .garanti-bitti { background: #fee2e2; color: #991b1b; }
+    .garanti-yakin { background: #fef3c7; color: #92400e; }
+    .garanti-iyi { background: #d1fae5; color: #065f46; }
+    .duzenleme-modu { outline: 2px solid #d97706; }
+    .ozet {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .ozet-kutu {
+      background: white;
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border-top: 4px solid #2563eb;
+    }
+    .ozet-kutu .sayi { font-size: 28px; font-weight: bold; }
+    .ozet-kutu .yazi { font-size: 13px; color: #6b7280; }
+    .ozet-kutu.yesil { border-top-color: #059669; }
+    .ozet-kutu.kirmizi { border-top-color: #dc2626; }
+    .ozet-kutu.gri { border-top-color: #6b7280; }
+    .ozet-kutu.sari { border-top-color: #d97706; }
+    .gecmis-kart { border-left: 4px solid #7c3aed; display: none; }
+    .gecmis-kart li { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <div class="kapsayici">
+    <h1>IT Envanter Takip Sistemi</h1>
+
+    <!-- ÖZET KUTULARI -->
+    <div class="ozet">
+      <div class="ozet-kutu"><div class="sayi" id="ozToplam">0</div><div class="yazi">Toplam cihaz</div></div>
+      <div class="ozet-kutu yesil"><div class="sayi" id="ozAktif">0</div><div class="yazi">Aktif</div></div>
+      <div class="ozet-kutu kirmizi"><div class="sayi" id="ozArizali">0</div><div class="yazi">Arızalı</div></div>
+      <div class="ozet-kutu gri"><div class="sayi" id="ozDepoda">0</div><div class="yazi">Depoda</div></div>
+      <div class="ozet-kutu sari"><div class="sayi" id="ozGaranti">0</div><div class="yazi">Garantisi biten / bitmek üzere olan</div></div>
+    </div>
+
+    <!-- 1) CİHAZ EKLEME / DÜZENLEME FORMU -->
+    <div class="kart" id="formKarti">
+      <h2 id="formBaslik">Yeni Cihaz Ekle</h2>
+      <form id="cihazFormu">
+        <div class="form-grid">
+          <div>
+            <label for="bilgisayarAdi">Bilgisayar Adı</label>
+            <input id="bilgisayarAdi" required placeholder="Örn: PC-MUHASEBE-01">
+          </div>
+          <div>
+            <label for="tur">Cihaz Türü</label>
+            <select id="tur">
+              <option>Dizüstü</option>
+              <option>Masaüstü</option>
+              <option>Monitör</option>
+              <option>Yazıcı</option>
+              <option>Telefon</option>
+              <option>Tablet</option>
+              <option>Diğer</option>
+            </select>
+          </div>
+          <div>
+            <label for="marka">Marka</label>
+            <input id="marka" required placeholder="Örn: Dell">
+          </div>
+          <div>
+            <label for="model">Model</label>
+            <input id="model" required placeholder="Örn: Latitude 5420">
+          </div>
+          <div>
+            <label for="seriNo">Seri Numarası</label>
+            <input id="seriNo" required placeholder="Örn: ABC1234">
+          </div>
+          <div>
+            <label for="zimmet">Kullanıcı Zimmeti</label>
+            <input id="zimmet" required placeholder="Örn: Ayşe Yılmaz">
+          </div>
+          <div>
+            <label for="alisTarihi">Alış Tarihi</label>
+            <input id="alisTarihi" type="date">
+          </div>
+          <div>
+            <label for="garantiBitis">Garanti Bitiş Tarihi</label>
+            <input id="garantiBitis" type="date">
+          </div>
+          <div>
+            <label for="durum">Durum</label>
+            <select id="durum">
+              <option value="Aktif">Aktif</option>
+              <option value="Arızalı">Arızalı</option>
+              <option value="Depoda">Depoda</option>
+            </select>
+          </div>
+        </div>
+        <br>
+        <button type="submit" id="kaydetButonu">Ekle</button>
+        <button type="button" class="gri" id="iptalButonu" style="display:none">İptal</button>
+      </form>
+    </div>
+
+    <!-- 2) ZİMMET GEÇMİŞİ (Geçmiş butonuna basınca açılır) -->
+    <div class="kart gecmis-kart" id="gecmisKarti">
+      <h2 id="gecmisBaslik">Zimmet Geçmişi</h2>
+      <ul id="gecmisListe"></ul>
+      <button type="button" class="gri" id="gecmisKapat">Kapat</button>
+    </div>
+
+    <!-- 3) CİHAZ LİSTESİ -->
+    <div class="kart">
+      <h2>Cihaz Listesi (<span id="toplam">0</span>)</h2>
+      <div class="ust-cubuk">
+        <input id="arama" placeholder="Ara: ad, marka, seri no, kullanıcı...">
+        <select id="turFiltre">
+          <option value="">Tüm türler</option>
+          <option>Dizüstü</option>
+          <option>Masaüstü</option>
+          <option>Monitör</option>
+          <option>Yazıcı</option>
+          <option>Telefon</option>
+          <option>Tablet</option>
+          <option>Diğer</option>
+        </select>
+        <select id="durumFiltre">
+          <option value="">Tüm durumlar</option>
+          <option value="Aktif">Aktif</option>
+          <option value="Arızalı">Arızalı</option>
+          <option value="Depoda">Depoda</option>
+        </select>
+        <button class="ikincil" id="csvButonu" type="button">Excel için İndir (CSV)</button>
+        <button class="gri" id="yedekButonu" type="button">Yedek Al (JSON)</button>
+        <button class="gri" id="yedekYukleButonu" type="button">Yedeği Yükle</button>
+        <input type="file" id="yedekDosyasi" accept=".json,application/json" style="display:none">
+      </div>
+      <div class="tablo-sarmal">
+        <table>
+          <thead>
+            <tr>
+              <th>Bilgisayar Adı</th>
+              <th>Tür</th>
+              <th>Marka</th>
+              <th>Model</th>
+              <th>Seri No</th>
+              <th>Zimmetli Kullanıcı</th>
+              <th>Garanti</th>
+              <th>Durum</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="liste"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT: Sayfanın çalışmasını sağlayan kodlar -->
+  <script>
+    // Cihazları tarayıcının hafızasında (localStorage) saklıyoruz.
+    var ANAHTAR = "it-envanter";
+    var cihazlar = [];
+    var duzenlenenSira = -1; // -1 demek: şu an düzenleme yapılmıyor
+
+    // Bugünün tarihini "2026-10-10" biçiminde verir
+    function bugun() {
+      var d = new Date();
+      var ay = ("0" + (d.getMonth() + 1)).slice(-2);
+      var gun = ("0" + d.getDate()).slice(-2);
+      return d.getFullYear() + "-" + ay + "-" + gun;
+    }
+
+    // "2026-10-10" -> "10.10.2026"
+    function tarihYaz(t) {
+      if (!t) { return "-"; }
+      var p = t.split("-");
+      return p[2] + "." + p[1] + "." + p[0];
+    }
+
+    // Garantiye kaç gün kaldığını hesaplar (bittiyse eksi sayı)
+    function kalanGun(t) {
+      var p = t.split("-");
+      var bitis = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+      var simdi = new Date();
+      var bugunSifir = new Date(simdi.getFullYear(), simdi.getMonth(), simdi.getDate());
+      return Math.round((bitis - bugunSifir) / 86400000);
+    }
+
+    // Garanti sütunu için renkli etiket üretir
+    function garantiEtiketi(t) {
+      if (!t) { return "-"; }
+      var kalan = kalanGun(t);
+      var sinif = "garanti-iyi";
+      var not = "";
+      if (kalan < 0) { sinif = "garanti-bitti"; not = " (Bitti)"; }
+      else if (kalan <= 30) { sinif = "garanti-yakin"; not = " (" + kalan + " gün kaldı)"; }
+      return "<span class='rozet " + sinif + "'>" + tarihYaz(t) + not + "</span>";
+    }
+
+    // Kayıtlı verileri hafızadan oku
+    function yukle() {
+      try {
+        var kayit = localStorage.getItem(ANAHTAR);
+        cihazlar = kayit ? JSON.parse(kayit) : [];
+      } catch (hata) {
+        cihazlar = [];
+      }
+      // Eski kayıtlarda eksik alanları tamamla
+      cihazlar.forEach(function (c) {
+        if (!c.durum) { c.durum = "Aktif"; }
+        if (!c.tur) { c.tur = "Diğer"; }
+        if (!c.alisTarihi) { c.alisTarihi = ""; }
+        if (!c.garantiBitis) { c.garantiBitis = ""; }
+        if (!c.gecmis) { c.gecmis = [{ kullanici: c.zimmet, tarih: "" }]; }
+      });
+    }
+
+    // Verileri hafızaya kaydet
+    function kaydet() {
+      try {
+        localStorage.setItem(ANAHTAR, JSON.stringify(cihazlar));
+      } catch (hata) {
+        alert("Veriler kaydedilemedi.");
+      }
+    }
+
+    // Metni güvenli hale getir (sayfa bozulmasın diye)
+    function temizle(metin) {
+      var div = document.createElement("div");
+      div.textContent = metin;
+      return div.innerHTML;
+    }
+
+    // Listeyi ekranda göster
+    function listele() {
+      var aranan = document.getElementById("arama").value.toLowerCase();
+      var durumFiltre = document.getElementById("durumFiltre").value;
+      var turFiltre = document.getElementById("turFiltre").value;
+      var govde = document.getElementById("liste");
+      var html = "";
+      var sayac = 0;
+
+      cihazlar.forEach(function (c, sira) {
+        var tumMetin = (c.bilgisayarAdi + " " + c.marka + " " + c.model + " " + c.seriNo + " " + c.zimmet).toLowerCase();
+        if (tumMetin.indexOf(aranan) === -1) { return; }
+        if (durumFiltre && c.durum !== durumFiltre) { return; }
+        if (turFiltre && c.tur !== turFiltre) { return; }
+        sayac++;
+        html += "<tr>" +
+          "<td>" + temizle(c.bilgisayarAdi) + "</td>" +
+          "<td>" + temizle(c.tur) + "</td>" +
+          "<td>" + temizle(c.marka) + "</td>" +
+          "<td>" + temizle(c.model) + "</td>" +
+          "<td>" + temizle(c.seriNo) + "</td>" +
+          "<td>" + temizle(c.zimmet) + "</td>" +
+          "<td>" + garantiEtiketi(c.garantiBitis) + "</td>" +
+          "<td><span class='rozet " + temizle(c.durum) + "'>" + temizle(c.durum) + "</span></td>" +
+          "<td class='islem'>" +
+            "<button class='gecmis' onclick='gecmisGoster(" + sira + ")'>Geçmiş</button> " +
+            "<button class='duzenle' onclick='duzenle(" + sira + ")'>Düzenle</button> " +
+            "<button class='sil' onclick='sil(" + sira + ")'>Sil</button>" +
+          "</td>" +
+          "</tr>";
+      });
+
+      if (sayac === 0) {
+        html = "<tr><td colspan='9' class='bos'>Kayıt bulunamadı.</td></tr>";
+      }
+      govde.innerHTML = html;
+      document.getElementById("toplam").textContent = cihazlar.length;
+      ozetGuncelle();
+    }
+
+    // Zimmet geçmişini göster
+    function gecmisGoster(sira) {
+      var c = cihazlar[sira];
+      document.getElementById("gecmisBaslik").textContent = "Zimmet Geçmişi: " + c.bilgisayarAdi;
+      var html = "";
+      // En yeni kayıt en üstte görünsün
+      for (var i = c.gecmis.length - 1; i >= 0; i--) {
+        var g = c.gecmis[i];
+        html += "<li><b>" + temizle(g.kullanici) + "</b> - " +
+          (g.tarih ? tarihYaz(g.tarih) : "tarih kayıtlı değil") + "</li>";
+      }
+      document.getElementById("gecmisListe").innerHTML = html;
+      document.getElementById("gecmisKarti").style.display = "block";
+      window.scrollTo(0, 0);
+    }
+
+    document.getElementById("gecmisKapat").addEventListener("click", function () {
+      document.getElementById("gecmisKarti").style.display = "none";
+    });
+
+    // Formu "ekleme" haline döndür
+    function formuSifirla() {
+      duzenlenenSira = -1;
+      document.getElementById("cihazFormu").reset();
+      document.getElementById("formBaslik").textContent = "Yeni Cihaz Ekle";
+      document.getElementById("kaydetButonu").textContent = "Ekle";
+      document.getElementById("iptalButonu").style.display = "none";
+      document.getElementById("formKarti").classList.remove("duzenleme-modu");
+    }
+
+    // Cihazı düzenlemek için bilgileri forma doldur
+    function duzenle(sira) {
+      var c = cihazlar[sira];
+      duzenlenenSira = sira;
+      document.getElementById("bilgisayarAdi").value = c.bilgisayarAdi;
+      document.getElementById("tur").value = c.tur;
+      document.getElementById("marka").value = c.marka;
+      document.getElementById("model").value = c.model;
+      document.getElementById("seriNo").value = c.seriNo;
+      document.getElementById("zimmet").value = c.zimmet;
+      document.getElementById("alisTarihi").value = c.alisTarihi;
+      document.getElementById("garantiBitis").value = c.garantiBitis;
+      document.getElementById("durum").value = c.durum;
+      document.getElementById("formBaslik").textContent = "Cihazı Düzenle";
+      document.getElementById("kaydetButonu").textContent = "Güncelle";
+      document.getElementById("iptalButonu").style.display = "inline-block";
+      document.getElementById("formKarti").classList.add("duzenleme-modu");
+      window.scrollTo(0, 0);
+    }
+
+    // Ekle veya Güncelle
+    document.getElementById("cihazFormu").addEventListener("submit", function (olay) {
+      olay.preventDefault(); // Sayfanın yenilenmesini engelle
+
+      var seriNo = document.getElementById("seriNo").value.trim();
+      var zimmet = document.getElementById("zimmet").value.trim();
+      var alis = document.getElementById("alisTarihi").value;
+      var garanti = document.getElementById("garantiBitis").value;
+
+      // Garanti, alış tarihinden önce olamaz
+      if (alis && garanti && garanti < alis) {
+        alert("Garanti bitiş tarihi, alış tarihinden önce olamaz!");
+        return;
+      }
+
+      // Aynı seri numarası ikinci kez girilmesin (düzenlenen kayıt hariç)
+      var varMi = cihazlar.some(function (c, sira) {
+        return sira !== duzenlenenSira && c.seriNo.toLowerCase() === seriNo.toLowerCase();
+      });
+      if (varMi) {
+        alert("Bu seri numarası zaten kayıtlı!");
+        return;
+      }
+
+      var yeniKayit = {
+        bilgisayarAdi: document.getElementById("bilgisayarAdi").value.trim(),
+        tur: document.getElementById("tur").value,
+        marka: document.getElementById("marka").value.trim(),
+        model: document.getElementById("model").value.trim(),
+        seriNo: seriNo,
+        zimmet: zimmet,
+        alisTarihi: alis,
+        garantiBitis: garanti,
+        durum: document.getElementById("durum").value,
+        gecmis: []
+      };
+
+      if (duzenlenenSira === -1) {
+        // Yeni cihaz: geçmişin ilk satırı
+        yeniKayit.gecmis = [{ kullanici: zimmet, tarih: bugun() }];
+        cihazlar.push(yeniKayit);
+      } else {
+        // Düzenleme: eski geçmişi koru
+        var eski = cihazlar[duzenlenenSira];
+        yeniKayit.gecmis = eski.gecmis;
+        // Kullanıcı değiştiyse geçmişe yeni satır ekle
+        if (eski.zimmet.toLowerCase() !== zimmet.toLowerCase()) {
+          yeniKayit.gecmis.push({ kullanici: zimmet, tarih: bugun() });
+        }
+        cihazlar[duzenlenenSira] = yeniKayit;
+      }
+
+      kaydet();
+      listele();
+      formuSifirla();
+    });
+
+    // İptal butonu
+    document.getElementById("iptalButonu").addEventListener("click", formuSifirla);
+
+    // Cihaz sil
+    function sil(sira) {
+      if (confirm("Bu cihazı silmek istediğine emin misin?")) {
+        cihazlar.splice(sira, 1);
+        if (duzenlenenSira === sira) { formuSifirla(); }
+        else if (duzenlenenSira > sira) { duzenlenenSira--; }
+        document.getElementById("gecmisKarti").style.display = "none";
+        kaydet();
+        listele();
+      }
+    }
+
+    // Arama ve filtreler değişince listeyi yenile
+    document.getElementById("arama").addEventListener("input", listele);
+    document.getElementById("durumFiltre").addEventListener("change", listele);
+    document.getElementById("turFiltre").addEventListener("change", listele);
+
+    // CSV dosyası indir (Excel ile açılır)
+    document.getElementById("csvButonu").addEventListener("click", function () {
+      var satirlar = [["Bilgisayar Adı", "Tür", "Marka", "Model", "Seri No", "Zimmetli Kullanıcı", "Alış Tarihi", "Garanti Bitiş", "Durum"]];
+      cihazlar.forEach(function (c) {
+        satirlar.push([c.bilgisayarAdi, c.tur, c.marka, c.model, c.seriNo, c.zimmet,
+          tarihYaz(c.alisTarihi), tarihYaz(c.garantiBitis), c.durum]);
+      });
+      var csv = satirlar.map(function (s) {
+        return s.map(function (h) { return '"' + String(h).replace(/"/g, '""') + '"'; }).join(";");
+      }).join("\n");
+
+      // "\uFEFF" Türkçe karakterlerin Excel'de doğru görünmesini sağlar
+      var blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      var link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "it-envanter.csv";
+      link.click();
+    });
+
+    // Üstteki özet kutularındaki sayıları hesapla
+    function ozetGuncelle() {
+      var aktif = 0, arizali = 0, depoda = 0, garanti = 0;
+      cihazlar.forEach(function (c) {
+        if (c.durum === "Aktif") { aktif++; }
+        if (c.durum === "Arızalı") { arizali++; }
+        if (c.durum === "Depoda") { depoda++; }
+        // Garantisi bitmiş veya 30 gün içinde bitecek olanlar
+        if (c.garantiBitis && kalanGun(c.garantiBitis) <= 30) { garanti++; }
+      });
+      document.getElementById("ozToplam").textContent = cihazlar.length;
+      document.getElementById("ozAktif").textContent = aktif;
+      document.getElementById("ozArizali").textContent = arizali;
+      document.getElementById("ozDepoda").textContent = depoda;
+      document.getElementById("ozGaranti").textContent = garanti;
+    }
+
+    // YEDEK AL: tüm cihazları .json dosyası olarak indir
+    document.getElementById("yedekButonu").addEventListener("click", function () {
+      var metin = JSON.stringify(cihazlar, null, 2);
+      var blob = new Blob([metin], { type: "application/json" });
+      var link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "it-envanter-yedek-" + bugun() + ".json";
+      link.click();
+    });
+
+    // YEDEĞİ YÜKLE: "Yedeği Yükle" butonu gizli dosya seçiciyi açar
+    document.getElementById("yedekYukleButonu").addEventListener("click", function () {
+      document.getElementById("yedekDosyasi").click();
+    });
+
+    document.getElementById("yedekDosyasi").addEventListener("change", function (olay) {
+      var dosya = olay.target.files[0];
+      if (!dosya) { return; }
+
+      var okuyucu = new FileReader();
+      okuyucu.onload = function () {
+        var veri;
+        try {
+          veri = JSON.parse(okuyucu.result);
+        } catch (hata) {
+          alert("Bu dosya geçerli bir yedek dosyası değil.");
+          olay.target.value = "";
+          return;
+        }
+
+        // Dosyanın içi doğru biçimde mi kontrol et
+        var gecerli = Array.isArray(veri) && veri.every(function (c) {
+          return c && typeof c.bilgisayarAdi === "string" && typeof c.marka === "string" &&
+                 typeof c.model === "string" && typeof c.seriNo === "string" &&
+                 typeof c.zimmet === "string";
+        });
+        if (!gecerli) {
+          alert("Yedek dosyasının içeriği beklenen biçimde değil.");
+          olay.target.value = "";
+          return;
+        }
+
+        if (confirm("Şu anki " + cihazlar.length + " kayıt silinecek ve yedekteki " + veri.length + " kayıt yüklenecek. Devam edilsin mi?")) {
+          cihazlar = veri;
+          kaydet();
+          yukle();          // eksik alanları tamamlar
+          formuSifirla();
+          listele();
+        }
+        olay.target.value = ""; // Aynı dosyayı tekrar seçebilmek için
+      };
+      okuyucu.readAsText(dosya);
+    });
+
+    // Sayfa açılınca çalışacak ilk işlemler
+    yukle();
+    listele();
+  </script>
+</body>
+</html>
